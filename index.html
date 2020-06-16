@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="Ruleta en Javascript">
+<meta name="keywords" content="ruleta,javascript,html,css">
+
+<!-- Optional JavaScript -->
+<!-- jQuery  -->
+<script src="librerias/jquery/jquery-3.4.1.min.js"></script>
+<title>RULETA</title>
+<style>
+body {
+    margin: 5px;
+}
+#numero {
+    margin: 1em 0;
+    padding: 2em;
+    display: inline-block;
+    border: 1px solid #555;
+}
+#resultado {
+    border: 1px solid #555;
+    padding: 10px;
+    width: 250px;
+}
+#imagen {
+	width: 250px;
+}
+	
+#imagen img {
+	width: 100%;
+}
+#form1 input {
+    width: 50px;
+}
+#form1 p {
+    float: left;
+    width: 130px;
+    margin: 0;
+    padding: 0;
+}
+#ruleta {
+    width: 90px;
+    background: #555;
+    text-align: center;
+    padding: 15px 0px;
+    border: 2px solid #555;
+    color: #fff;
+}
+</style>
+</head>
+
+<body>
+<form id="form1">
+  <p>Apuesto al negro</p>
+  <input name="fnegro" id="fnegro" value="" />
+  Euros<br/>
+  <p>Apuesto al rojo</p>
+  <input name="frojo" id="frojo" value="" />
+  Euros<br/>
+  <p>Apuesto al par</p>
+  <input name="fpar" id="fpar" value="" />
+  Euros<br/>
+  <p>Apuesto al impar</p>
+  <input name="fimpar" id="fimpar" value="" />
+  Euros<br/>
+</form>
+<br/>
+<div id="ruleta" onclick="girarRuleta();">Girar Ruleta</div>
+<div id="numero"></div>
+<br/>
+<div id="resultado">:::</div>
+<br/>
+<div id="imagen"></div>
+<script>
+
+let contador = 0;
+let fin = false;
+let num;
+let enMarcha = false;
+
+	
+function girarRuleta(){
+	document.getElementById("ruleta").onclick = null;
+	
+	document.getElementById("ruleta").innerHTML = "-";
+	document.getElementById("resultado").innerHTML = "BOLA LANZADA";
+
+	if (contador == 0){
+		url = "http://localhost/JavaScript_Ajax_PHP-Ruleta_Apuestas/php/ruleta.php?go=1";
+	} else {
+		url = "http://localhost/JavaScript_Ajax_PHP-Ruleta_Apuestas/php/ruleta.php";
+	}
+	
+	$.ajax({
+		url: url,      
+		dataType: "json",
+		success: getNumero,
+		error: function() {
+		console.log("No se ha podido lanzar la bola.");
+	  	}
+	});
+
+	contador++;
+}	
+	
+function getNumero(respuesta){
+	enMarcha = true;
+	let numeroPag = document.getElementById("numero");
+	let status = respuesta['status'];
+	fin = respuesta['datos']['fin'];
+	num = respuesta['datos']['num'];
+	let color = respuesta['datos']['color'];
+
+	numeroPag.style.backgroundColor = color;
+	if (color == "black"){
+		numeroPag.style.color = "white";
+	}
+	numeroPag.innerHTML = num;
+		
+	if (fin == true) {
+		let eu_negro = document.getElementById("fnegro").value;
+		let eu_rojo = document.getElementById("frojo").value;
+		let eu_par = document.getElementById("fpar").value;
+		let eu_impar = document.getElementById("fimpar").value;
+			
+		$.ajax({
+    		url: "http://localhost/JavaScript_Ajax_PHP-Ruleta_Apuestas/php/ruleta_que_has_ganado.php?num="+num+"&eu_negro="+eu_negro+"&eu_rojo="+eu_rojo+"&eu_par="+eu_par+"&eu_impar="+eu_impar,      
+        	dataType: "json",
+        	success: getGanado,
+        	error: function() {
+        		console.log("No se ha podido calcular lo ganado.");
+   			}
+        });
+		
+		} else {
+			girarRuleta();
+		}
+}
+	
+	function getGanado(respuesta){
+		let resultado = document.getElementById("resultado");
+		resultado.innerHTML = "";
+		for (let i in respuesta){
+			resultado.innerHTML += respuesta[i]["msj"]+""+respuesta[i]["valor"]+"<br/>";
+		}
+		
+		document.getElementById("ruleta").innerHTML = "Girar Ruleta";
+		contador = 0;
+		fin = false;
+		document.getElementById("ruleta").onclick = girarRuleta;
+	}
+</script>
+</body>
+</html>
